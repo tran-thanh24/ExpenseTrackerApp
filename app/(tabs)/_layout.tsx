@@ -31,7 +31,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="add-button"
+        name="add-button/index"
         options={{
           tabBarButton: () => (
             <TouchableOpacity

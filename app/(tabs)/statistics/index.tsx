@@ -8,10 +8,15 @@ import {
   Zap,
 } from "lucide-react-native";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { PieChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "./styles";
 
 const pieData = [
   { value: 145, color: "#4ade80", text: "Food" },
@@ -125,3 +130,99 @@ const SpendingItem = ({ icon, color, title, amount }: any) => (
     <Text style={styles.itemAmount}>{amount}</Text>
   </View>
 );
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  title: { fontSize: 24, fontWeight: "700", color: "#1e293b" },
+  filterContainer: {
+    flexDirection: "row",
+    backgroundColor: "#e2e8f0",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  filterBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  activeFilter: { backgroundColor: "#3b82f6" },
+  activeFilterText: { color: "#fff", fontWeight: "600" },
+  filterText: { color: "#64748b", fontWeight: "500" },
+  dateSelector: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  dateInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  dateText: { fontWeight: "600", color: "#1e293b" },
+  chartCard: {
+    backgroundColor: "#fff",
+    borderRadius: 30,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 15,
+    elevation: 2,
+  },
+  chartLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 10,
+  },
+  chartWrapper: { alignItems: "center", paddingVertical: 10 },
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 25,
+    marginBottom: 15,
+  },
+  listTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1e293b",
+  },
+  viewMoreText: { color: "#6366f1", fontWeight: "600" },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  iconBox: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  itemTitle: { flex: 1, marginLeft: 15, fontSize: 16, fontWeight: "600" },
+  itemAmount: { fontSize: 16, fontWeight: "700" },
+  filterIcon: {
+    padding: 8,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+});

@@ -1,6 +1,5 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "./styles";
 export default function WalletScreen() {
   return (
     <SafeAreaView style={styles.container}>
@@ -11,3 +10,25 @@ export default function WalletScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1e293b",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#64748b",
+    marginTop: 10,
+  },
+});

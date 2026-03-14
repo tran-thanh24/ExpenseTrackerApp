@@ -1,6 +1,5 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "./styles";
 export default function Page() {
   return (
     <SafeAreaView style={styles.container}>
@@ -12,3 +11,30 @@ export default function Page() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+    padding: 20,
+  },
+  header: {
+    alignItems: "center",
+    marginTop: 50,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#cbd5e1",
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 15,
+  },
+  email: {
+    fontSize: 14,
+    color: "#64748b",
+  },
+});
