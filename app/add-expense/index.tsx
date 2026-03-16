@@ -28,7 +28,7 @@ export default function ExpenseDetail() {
 
         <View style={styles.infoRow}>
           <Text style={styles.label}>Category</Text>
-          <Text style={styles.value}>Fodd</Text>
+          <Text style={styles.value}>Food</Text>
         </View>
 
         <View style={styles.infoRow}>
