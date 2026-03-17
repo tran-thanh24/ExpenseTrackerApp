@@ -19,12 +19,12 @@ export default function RegisterScreen() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Full Name</Text>
-          <TextInput style={styles.input} placeholder="John Doe" />
+          <TextInput style={styles.input} placeholder="Tran Thanh" />
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} placeholder="example@mail.com" />
+          <TextInput style={styles.input} placeholder="tcthanh2412@gmail.com" />
         </View>
 
         <View style={styles.inputGroup}>

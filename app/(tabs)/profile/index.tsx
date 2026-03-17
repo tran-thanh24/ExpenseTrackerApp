@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import {
   Bell,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 export default function Page() {
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -70,7 +72,10 @@ export default function Page() {
           />
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => router.push("/auth/login")}
+        >
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
