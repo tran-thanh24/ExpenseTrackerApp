@@ -1,113 +1,119 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { register } from "../services/authService";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!fullName || !email || !password) {
+      Alert.alert("Thông báo", "Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register(fullName, email, password);
+      Alert.alert("Thành công", "Đăng ký tài khoản thành công!", [
+        { text: "Đăng nhập ngay", onPress: () => router.push("/auth/login") },
+      ]);
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Đăng ký thất bại";
+      Alert.alert("Lỗi", msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Create Account</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Tạo tài khoản</Text>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput style={styles.input} placeholder="Tran Thanh" />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} placeholder="tcthanh2412@gmail.com" />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            secureTextEntry
-          />
-        </View>
-
-        <TouchableOpacity style={styles.loginBtn}>
-          <Text style={styles.loginText}>Sign Up</Text>
-        </TouchableOpacity>
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Họ và tên"
+          value={fullName}
+          onChangeText={setFullName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Mật khẩu"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ marginTop: 20 }}
+          style={styles.button}
+          onPress={handleRegister}
+          disabled={loading}
         >
-          <Text style={{ textAlign: "center", color: "#64748b" }}>
-            Already have an account? Login
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Đăng ký</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.linkText}>Đã có tài khoản? Đăng nhập</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-  },
-  content: {
-    flex: 1,
-    padding: 30,
+    padding: 25,
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#1e293b",
+    marginBottom: 30,
+    textAlign: "center",
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#64748b",
-    marginBottom: 40,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 8,
-  },
+  form: { gap: 15 },
   input: {
-    backgroundColor: "#f8fafc",
+    height: 55,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    padding: 15,
-    borderRadius: 12,
-    fontSize: 16,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    paddingHorizontal: 15,
   },
-  loginBtn: {
-    backgroundColor: "#3b82f6",
-    padding: 18,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  loginText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  footer: {
-    flexDirection: "row",
+  button: {
+    height: 55,
+    backgroundColor: "#4db6ac",
+    borderRadius: 10,
     justifyContent: "center",
-    marginTop: 18,
+    alignItems: "center",
+    marginTop: 10,
   },
-  linkText: {
-    color: "#3b82f6",
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  linkText: { textAlign: "center", color: "#00cec9", marginTop: 15 },
 });
