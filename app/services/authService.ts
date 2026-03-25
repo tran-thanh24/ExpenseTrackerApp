@@ -1,4 +1,4 @@
-import apiClient from "./api"; // Đảm bảo đường dẫn này đúng tới file api.ts của bạn
+import apiClient from "./api";
 
 export const login = async (email: any, password: any) => {
   try {
@@ -12,13 +12,13 @@ export const login = async (email: any, password: any) => {
   }
 };
 
-export const register = async (fullName: any, email: any, password: any) => {
+export const register = async (userData: {
+  fullName: any;
+  email: any;
+  password: any;
+}) => {
   try {
-    const response = await apiClient.post("/Auth/register", {
-      fullName,
-      email,
-      password,
-    });
+    const response = await apiClient.post("/Auth/register", userData);
     return response.data;
   } catch (error: any) {
     throw error;
