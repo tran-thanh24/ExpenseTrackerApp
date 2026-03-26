@@ -1,44 +1,43 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { AuthProvider } from "./contexts/AuthContext";
-
-export default function RootLayout() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+function RootLayoutNav() {
+  const { token, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsReady(true);
+    setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!isMounted || isLoading) return;
 
     const inAuthGroup = segments[0] === "auth";
 
-    if (!isLoggedIn && !inAuthGroup) {
+    if (!token && !inAuthGroup) {
       router.replace("/auth/login");
-    } else if (isLoggedIn && inAuthGroup) {
-      router.replace("/(tabs)/index");
+    } else if (token && inAuthGroup) {
+      router.replace("/home");
     }
-  }, [isLoggedIn, segments, isReady]);
+  }, [token, segments, isLoading, isMounted]);
+
+  if (isLoading || !isMounted) return null;
 
   return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="auth/login" />
+      <Stack.Screen name="auth/register" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="auth/login" />
-        <Stack.Screen name="auth/register" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="add-expense/index"
-          options={{
-            presentation: "modal",
-            animation: "slide_from_bottom",
-          }}
-        />
-        <Stack.Screen name="expense-detail/index" />
-      </Stack>
+      <RootLayoutNav />
     </AuthProvider>
   );
 }

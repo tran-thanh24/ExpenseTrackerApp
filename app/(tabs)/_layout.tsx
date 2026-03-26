@@ -17,14 +17,14 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index/index"
+        name="home"
         options={{
           tabBarIcon: ({ color }) => <Home size={24} color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="wallet/index"
+        name="wallet"
         options={{
           tabBarIcon: ({ color }) => <LayoutGrid size={24} color={color} />,
         }}
@@ -48,14 +48,14 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="statistics/index"
+        name="statistics"
         options={{
           tabBarIcon: ({ color }) => <PieChart size={24} color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="profile/index"
+        name="profile"
         options={{
           tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}

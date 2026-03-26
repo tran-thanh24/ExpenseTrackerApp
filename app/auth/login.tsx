@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react-native"; // Sử dụng Lucide Icon cho hiện đại
+import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -34,10 +34,11 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await loginApi(email, password);
+      console.log("Token chuẩn từ BE:", response.token);
 
       if (response.token) {
         await login(response.token);
-        router.replace("/(tabs)/index");
+        router.replace("/(tabs)/home");
       }
     } catch (error: any) {
       const errorMsg =
