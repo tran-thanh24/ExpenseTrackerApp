@@ -1,50 +1,49 @@
-# Welcome to your Expo app 👋
+# 💸 ExpenseTrackerApp - Task & Expense Manager
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ứng dụng quản lý chi tiêu cá nhân được xây dựng bằng **React Native (Expo)** và **.NET Web API 8**. Dự án tập trung vào trải nghiệm người dùng mượt mà, quản lý tài chính trực quan với biểu đồ và hệ thống xác thực bảo mật.
 
-## Get started
+## 🚀 Tính năng chính
 
-1. Install dependencies
+- **Xác thực bảo mật:** Đăng ký/Đăng nhập sử dụng **JWT (JSON Web Token)**.
+- **Quản lý chi tiêu (CRUD):** Thêm, sửa, xóa và xem chi tiết các khoản chi tiêu.
+- **Phân tích trực quan:** Biểu đồ tròn (Pie Chart) phân tích chi tiêu theo từng hạng mục (Ăn uống, Mua sắm, Hóa đơn...).
+- **Bộ lọc thông minh:** Tìm kiếm giao dịch nhanh và lọc theo danh mục (Categories).
+- **Giao diện hiện đại:** Thiết kế Clean UI với Lucide Icons và màu sắc hài hòa.
 
-   ```bash
-   npm install
-   ```
+## 🛠 Công nghệ sử dụng
 
-2. Start the app
+### Frontend (Mobile App)
 
-   ```bash
-   npx expo start
-   ```
+- **React Native / Expo** (SDK 50+)
+- **Expo Router:** Hệ thống điều hướng dựa trên File-based routing.
+- **Context API:** Quản lý trạng thái đăng nhập toàn cục.
+- **Axios:** Kết nối API với interceptors xử lý Token.
+- **React Native Chart Kit:** Hiển thị biểu đồ phân tích.
 
-In the output, you'll find options to open the app in a
+### Backend (Web API)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **ASP.NET Core 8 (.NET 8)**
+- **Entity Framework Core:** Quản lý cơ sở dữ liệu.
+- **SQL Server:** Lưu trữ dữ liệu giao dịch và người dùng.
+- **Repository Pattern:** Đảm bảo code sạch, dễ bảo trì và mở rộng.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📸 Demo Giao diện
 
-## Get a fresh project
+## ⚙️ Cài đặt
 
-When you're ready, run:
+1.  **Backend:**
 
-```bash
-npm run reset-project
-```
+    - Mở project .NET trong Visual Studio.
+    - Cập nhật `ConnectionString` trong `appsettings.json`.
+    - Chạy lệnh `Update-Database` và nhấn F5.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2.  **Frontend:**
+    ```bash
+    cd ExpenseTrackerApp
+    npm install
+    npx expo start
+    ```
 
-## Learn more
+## 👤 Tác giả
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Trần Công Thành** - _Junior Software Developer_

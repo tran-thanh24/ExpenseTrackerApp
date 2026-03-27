@@ -1,33 +1,50 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
-      const token = await AsyncStorage.getItem("userToken");
-      if (token) setIsLoggedIn(true);
+      const storedToken =
+        (await AsyncStorage.getItem("userToken")) ||
+        (await SecureStore.getItemAsync("userToken"));
+
+      if (storedToken) {
+        setToken(storedToken);
+        setIsLoggedIn(true);
+      } else {
+        setToken(null);
+        setIsLoggedIn(false);
+      }
       setLoading(false);
     };
     checkLoginStatus();
   }, []);
 
-  const login = async (token: string) => {
-    await AsyncStorage.setItem("userToken", token);
+  const login = async (userToken: string) => {
+    await AsyncStorage.setItem("userToken", userToken);
+    await SecureStore.setItemAsync("userToken", userToken);
+    setToken(userToken);
     setIsLoggedIn(true);
   };
 
   const logout = async () => {
+    // Xóa sạch ở cả 2 nơi lưu trữ
     await AsyncStorage.removeItem("userToken");
+    await SecureStore.deleteItemAsync("userToken");
+    // Cập nhật state để kích hoạt Re-render ở Layout
+    setToken(null);
     setIsLoggedIn(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout, loading }}>
+    <AuthContext.Provider value={{ isLoggedIn, token, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

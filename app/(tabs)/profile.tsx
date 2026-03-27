@@ -1,187 +1,177 @@
 import { useRouter } from "expo-router";
+import { jwtDecode } from "jwt-decode";
 import {
   Bell,
   ChevronRight,
-  DollarSign,
-  FileText,
-  Moon,
-  Shield,
+  LogOut,
+  Settings,
+  ShieldCheck,
   User,
 } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-export default function Page() {
+import { useAuth } from "../contexts/AuthContext";
+
+export default function ProfileScreen() {
+  // THAY ĐỔI Ở ĐÂY: Lấy hàm logout ra, không dùng setToken thủ công nữa
+  const { token, logout } = useAuth();
   const router = useRouter();
+  const [userInfo, setUserInfo] = useState({ name: "Thanh", email: "" });
+
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        setUserInfo({
+          name: decoded.unique_name || "Thành",
+          email: decoded.email || "thanh@example.com",
+        });
+      } catch (e) {
+        console.log("Lỗi giải mã token", e);
+      }
+    }
+  }, [token]);
+
+  const handleLogout = async () => {
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn thoát không?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+        },
+      },
+    ]);
+  };
+
+  const ProfileItem = ({ icon, title, color = "#1e293b" }: any) => (
+    <TouchableOpacity style={styles.menuItem}>
+      <View style={[styles.iconBox, { backgroundColor: color + "15" }]}>
+        {icon}
+      </View>
+      <Text style={[styles.menuText, { color }]}>{title}</Text>
+      <ChevronRight color="#cbd5e1" size={20} />
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20 }}
-      >
-        <Text style={styles.title}>Profile</Text>
-
-        <TouchableOpacity style={styles.userCard}>
-          <View style={styles.avatarPlaceholder} />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>Trần Thành</Text>
-            <Text style={styles.userEmail}>tcthanh2412@gmail.com</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarText}>{userInfo.name.charAt(0)}</Text>
           </View>
-          <ChevronRight size={20} color="#94a3b8" />
-        </TouchableOpacity>
+          <Text style={styles.nameText}>{userInfo.name}</Text>
+          <Text style={styles.emailText}>{userInfo.email}</Text>
+        </View>
 
-        <View style={styles.menuGroup}>
-          <MenuItem
-            icon={<User size={20} color="#64748b" />}
-            label="Edit Profile"
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Tài khoản</Text>
+          <ProfileItem
+            icon={<User color="#3b82f6" size={20} />}
+            title="Thông tin cá nhân"
+            color="#3b82f6"
           />
-          <MenuItem
-            icon={<Bell size={20} color="#64748b" />}
-            label="Notifications"
-            rightComponent={
-              <Switch value={true} trackColor={{ true: "#3b82f6" }} />
-            }
+          <ProfileItem
+            icon={<ShieldCheck color="#10b981" size={20} />}
+            title="Đổi mật khẩu"
+            color="#10b981"
           />
-          <MenuItem
-            icon={<DollarSign size={20} color="#64748b" />}
-            label="Currency"
-            value="USD - US Dollar"
-          />
-          <MenuItem
-            icon={<Moon size={20} color="#64748b" />}
-            label="Dark Mode"
-            rightComponent={<Switch value={false} />}
+          <ProfileItem
+            icon={<Bell color="#f59e0b" size={20} />}
+            title="Thông báo"
+            color="#f59e0b"
           />
         </View>
 
-        <Text style={styles.menuSectionLabel}>More</Text>
-        <View style={styles.menuGroup}>
-          <MenuItem
-            icon={<Shield size={20} color="#64748b" />}
-            label="Security"
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Ứng dụng</Text>
+          <ProfileItem
+            icon={<Settings color="#64748b" size={20} />}
+            title="Cài đặt hệ thống"
           />
-          <MenuItem
-            icon={<FileText size={20} color="#64748b" />}
-            label="Privacy Policy"
-          />
+
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+            <View style={[styles.iconBox, { backgroundColor: "#fee2e2" }]}>
+              <LogOut color="#ef4444" size={20} />
+            </View>
+            <Text style={[styles.menuText, { color: "#ef4444" }]}>
+              Đăng xuất
+            </Text>
+            <ChevronRight color="#fee2e2" size={20} />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => router.push("/auth/login")}
-        >
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        <Text style={styles.versionText}>Phiên bản 1.0.0 (Beta)</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const MenuItem = ({ icon, label, value, rightComponent }: any) => (
-  <TouchableOpacity style={styles.menuItem}>
-    <View style={styles.menuIcon}>{icon}</View>
-    <Text style={styles.menuLabel}>{label}</Text>
-    {value && <Text style={styles.menuValue}>{value}</Text>}
-    {rightComponent ? (
-      rightComponent
-    ) : (
-      <ChevronRight size={18} color="#cbd5e1" />
-    )}
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginBottom: 20,
-  },
-  userCard: {
-    flexDirection: "row",
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  header: {
     alignItems: "center",
+    paddingVertical: 30,
     backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 25,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#e2e8f0",
+  avatarLarge: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#3b82f6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    elevation: 5,
+    shadowColor: "#3b82f6",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
-  userInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1e293b",
-  },
-  userEmail: {
-    fontSize: 14,
+  avatarText: { fontSize: 36, fontWeight: "700", color: "#fff" },
+  nameText: { fontSize: 22, fontWeight: "700", color: "#1e293b" },
+  emailText: { fontSize: 14, color: "#64748b", marginTop: 4 },
+  menuSection: { marginTop: 25, paddingHorizontal: 20 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
     color: "#94a3b8",
-  },
-  menuGroup: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 10,
+    marginLeft: 5,
+    textTransform: "uppercase",
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 18,
+    marginBottom: 10,
   },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#f8fafc",
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  menuLabel: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#1e293b",
-  },
-  menuValue: {
-    marginRight: 8,
-    color: "#94a3b8",
-    fontSize: 14,
-  },
-  menuSectionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#94a3b8",
-    marginLeft: 5,
-    marginBottom: 10,
-  },
-  logoutBtn: {
+  menuText: { flex: 1, marginLeft: 15, fontSize: 15, fontWeight: "600" },
+  versionText: {
+    textAlign: "center",
+    color: "#cbd5e1",
+    fontSize: 12,
+    marginBottom: 20,
     marginTop: 10,
-    alignItems: "center",
-    padding: 15,
-  },
-  logoutText: {
-    color: "#ef4444",
-    fontWeight: "600",
-    fontSize: 16,
   },
 });

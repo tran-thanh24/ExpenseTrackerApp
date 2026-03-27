@@ -1,70 +1,248 @@
-import { ShoppingBag, ShoppingCart, Zap } from "lucide-react-native";
-import React from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { jwtDecode } from "jwt-decode";
+import { Car, ShoppingBag, Utensils, Zap } from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
+  Dimensions,
+  FlatList,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { PieChart } from "react-native-chart-kit";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../contexts/AuthContext";
+import apiClient from "../services/api";
+
+const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen() {
+  const { token } = useAuth();
+  const router = useRouter();
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Thành");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        try {
+          const decoded: any = jwtDecode(token);
+          setUserName(decoded.unique_name || "Thành");
+        } catch (e) {
+          console.log("Lỗi giải mã token", e);
+        }
+        fetchExpenses();
+      }
+    }, [token])
+  );
+
+  const fetchExpenses = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get("/Expense");
+      setExpenses(response.data);
+    } catch (error) {
+      console.log("Lỗi lấy danh sách chi tiêu:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalBalance = expenses.reduce(
+    (sum: number, item: any) => sum + item.amount,
+    0
+  );
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
+  };
+
+  const chartData = [
+    { key: "Food", name: "Ăn uống", color: "#4ade80" },
+    { key: "Shopping", name: "Mua sắm", color: "#a78bfa" },
+    { key: "Bills", name: "Hóa đơn", color: "#fbbf24" },
+    { key: "Transport", name: "Di chuyển", color: "#3b82f6" },
+  ]
+    .map((cat) => ({
+      name: cat.name,
+      population: expenses
+        .filter((e: any) => e.category === cat.key)
+        .reduce((sum, e: any) => sum + e.amount, 0),
+      color: cat.color,
+      legendFontColor: "transparent",
+      legendFontSize: 0,
+    }))
+    .filter((item) => item.population > 0);
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "Food":
+        return { icon: <Utensils color="#fff" size={20} />, color: "#4ade80" };
+      case "Bills":
+        return { icon: <Zap color="#fff" size={20} />, color: "#fbbf24" };
+      case "Transport":
+        return { icon: <Car color="#fff" size={20} />, color: "#3b82f6" };
+      default:
+        return {
+          icon: <ShoppingBag color="#fff" size={20} />,
+          color: "#a78bfa",
+        };
+    }
+  };
+
+  const filteredExpenses = expenses.filter((item: any) => {
+    const matchSearch = item.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchCategory =
+      selectedCategory === "All" ||
+      selectedCategory === "" ||
+      item.category === selectedCategory;
+    return matchSearch && matchCategory;
+  });
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
+      <FlatList
+        data={filteredExpenses}
+        keyExtractor={(item: any) => item.id.toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20 }}
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greetText}>Hello, Thành</Text>
-          </View>
-          <View style={styles.avatarPlaceholder} />
-        </View>
+        ListHeaderComponent={
+          <>
+            <View style={styles.headerSection}>
+              <View style={styles.header}>
+                <View>
+                  <Text style={styles.greetText}>Chào buổi sáng,</Text>
+                  <Text style={styles.userName}>{userName} 👋</Text>
+                </View>
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={{ fontWeight: "bold", color: "#64748b" }}>
+                    {userName.charAt(0)}
+                  </Text>
+                </View>
+              </View>
 
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.balanceAmount}>$2,150.50</Text>
-        </View>
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceLabel}>Tổng chi tiêu tháng này</Text>
+                <Text style={styles.balanceAmount}>
+                  {formatCurrency(totalBalance)}
+                </Text>
+              </View>
+            </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>7 Days Statistics</Text>
-          <TouchableOpacity>
-            <Text style={{ color: "#6366f1" }}>See All</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.chartPlaceholder} />
+            {/* PHẦN BIỂU ĐỒ TỰ CUSTOM CHÚ THÍCH */}
+            {expenses.length > 0 && (
+              <View style={styles.chartSection}>
+                <Text style={styles.sectionTitle}>Phân tích chi tiêu</Text>
+                <View style={styles.chartRow}>
+                  <PieChart
+                    data={chartData}
+                    width={screenWidth / 2}
+                    height={160}
+                    chartConfig={{
+                      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    }}
+                    accessor={"population"}
+                    backgroundColor={"transparent"}
+                    paddingLeft={"15"}
+                    hasLegend={false}
+                  />
+                  {/* TỰ VẼ CHÚ THÍCH BÊN PHẢI */}
+                  <View style={styles.customLegend}>
+                    {chartData.map((item, index) => (
+                      <View key={index} style={styles.legendItem}>
+                        <View
+                          style={[styles.dot, { backgroundColor: item.color }]}
+                        />
+                        <Text style={styles.legendText} numberOfLines={1}>
+                          <Text style={{ fontWeight: "700" }}>
+                            {formatCurrency(item.population)}
+                          </Text>
+                          {` - ${item.name}`}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Expense</Text>
-          <TouchableOpacity>
-            <Text style={{ color: "#6366f1" }}>See All</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ExpenseItem
-          icon={<ShoppingBag color="#fff" size={20} />}
-          color="#4ade80"
-          title="Grocery"
-          date="Today, 10:45 AM"
-          amount="- $45.99"
-        />
-        <ExpenseItem
-          icon={<Zap color="#fff" size={20} />}
-          color="#fbbf24"
-          title="Electricity Bill"
-          date="Yesterday, 3:30 PM"
-          amount="- $60.00"
-        />
-        <ExpenseItem
-          icon={<ShoppingCart color="#fff" size={20} />}
-          color="#a78bfa"
-          title="Shoes Shopping"
-          date="Apr 20, 4:11 PM"
-          amount="- $120.00"
-        />
-      </ScrollView>
+            <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Tìm kiếm giao dịch ..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#94a3b8"
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 10 }}
+              >
+                {["All", "Food", "Shopping", "Bills", "Transport"].map(
+                  (cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      onPress={() => setSelectedCategory(cat)}
+                      style={[
+                        styles.filterBtn,
+                        selectedCategory === cat && styles.filterBtnActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterText,
+                          selectedCategory === cat && styles.filterTextActive,
+                        ]}
+                      >
+                        {cat === "All" ? "Tất cả" : cat}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </ScrollView>
+            </View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
+              <TouchableOpacity onPress={fetchExpenses}>
+                <Text style={{ color: "#3b82f6", fontWeight: "600" }}>
+                  Làm mới
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        }
+        renderItem={({ item }) => {
+          const config = getCategoryIcon(item.category);
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/expense-detail",
+                  params: { ...item },
+                })
+              }
+              style={{ paddingHorizontal: 20 }}
+            >
+              <ExpenseItem
+                icon={config.icon}
+                color={config.color}
+                title={item.title}
+                date={new Date(item.date).toLocaleDateString("vi-VN")}
+                amount={`- ${formatCurrency(item.amount)}`}
+              />
+            </TouchableOpacity>
+          );
+        }}
+        ListFooterComponent={<View style={{ height: 100 }} />}
+      />
     </SafeAreaView>
   );
 }
@@ -83,104 +261,108 @@ const ExpenseItem = ({ icon, title, date, amount, color }: any) => (
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  headerSection: {
+    padding: 20,
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    marginBottom: 10,
   },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
+    alignItems: "center",
   },
-
-  greetText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1e293b",
-  },
-
+  greetText: { fontSize: 13, color: "#64748b" },
+  userName: { fontSize: 18, fontWeight: "700", color: "#1e293b" },
   avatarPlaceholder: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#cbd5e1",
+    backgroundColor: "#f1f5f9",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
-
   balanceCard: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#1e293b",
     padding: 20,
-    borderRadius: 24,
-    marginBottom: 25,
-    shadowColor: "#3b82f6",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    borderRadius: 20,
     elevation: 5,
   },
-
-  balanceLabel: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-  },
-
+  balanceLabel: { color: "rgba(255,255,255,0.6)", fontSize: 12 },
   balanceAmount: {
     color: "#fff",
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "700",
     marginTop: 5,
   },
 
+  // Style cho phần Biểu đồ
+  chartSection: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 15,
+    borderRadius: 20,
+  },
+  chartRow: { flexDirection: "row", alignItems: "center" },
+  customLegend: { flex: 1, marginLeft: 10 },
+  legendItem: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
+  legendText: { fontSize: 11, color: "#475569", flex: 1 },
+
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingHorizontal: 20,
     marginVertical: 15,
     alignItems: "center",
   },
-
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1e293b",
-  },
-
-  chartPlaceholder: {
-    height: 120,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#1e293b" },
   expenseItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 18,
-    marginBottom: 12,
+    padding: 12,
+    borderRadius: 15,
+    marginBottom: 10,
   },
-
   iconContainer: {
-    width: 45,
-    height: 45,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  expenseTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-  expenseDate: {
-    fontSize: 12,
-    color: "#64748b",
-    marginTop: 2,
-  },
-
-  expenseAmount: {
-    fontSize: 15,
-    fontWeight: "700",
+  expenseTitle: { fontSize: 14, fontWeight: "600", color: "#1e293b" },
+  expenseDate: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
+  expenseAmount: { fontSize: 14, fontWeight: "700", color: "#ef4444" },
+  searchInput: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    fontSize: 14,
     color: "#1e293b",
   },
+  filterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#f1f5f9",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  filterBtnActive: {
+    backgroundColor: "#3b82f6",
+    borderColor: "#3b82f6",
+  },
+  filterText: { fontSize: 12, color: "#64748b", fontWeight: "600" },
+  filterTextActive: { color: "#fff" },
 });
