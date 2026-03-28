@@ -1,6 +1,13 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { jwtDecode } from "jwt-decode";
-import { Car, ShoppingBag, Utensils, Zap } from "lucide-react-native";
+import {
+  Car,
+  ShoppingBag,
+  TrendingDown,
+  Utensils,
+  Wallet,
+  Zap,
+} from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
   Dimensions,
@@ -16,6 +23,7 @@ import { PieChart } from "react-native-chart-kit";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import apiClient from "../services/api";
+import { isIncomeTransaction } from "../utils/transactionCategory";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -54,10 +62,13 @@ export default function HomeScreen() {
     }
   };
 
-  const totalBalance = expenses.reduce(
-    (sum: number, item: any) => sum + item.amount,
-    0
-  );
+  /** Chỉ cộng các khoản chi — không tính nạp tiền (Income) vào "tổng chi tiêu". */
+  const totalSpending = expenses
+    .filter((e: any) => !isIncomeTransaction(e))
+    .reduce(
+      (sum: number, item: any) => sum + Math.abs(Number(item.amount)),
+      0
+    );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
@@ -73,15 +84,21 @@ export default function HomeScreen() {
       name: cat.name,
       population: expenses
         .filter((e: any) => e.category === cat.key)
-        .reduce((sum, e: any) => sum + e.amount, 0),
+        .reduce((sum, e: any) => sum + Math.abs(Number(e.amount)), 0),
       color: cat.color,
       legendFontColor: "transparent",
       legendFontSize: 0,
     }))
     .filter((item) => item.population > 0);
 
+  /** Icon chi tiêu theo danh mục — khoản thu/nạp tiền xử lý riêng qua isIncomeTransaction. */
   const getCategoryIcon = (category: string) => {
     switch (category) {
+      case "Outcome":
+        return {
+          icon: <TrendingDown color="#fff" size={20} />,
+          color: "#dc2626",
+        };
       case "Food":
         return { icon: <Utensils color="#fff" size={20} />, color: "#4ade80" };
       case "Bills":
@@ -95,6 +112,11 @@ export default function HomeScreen() {
         };
     }
   };
+
+  const getIncomeIcon = () => ({
+    icon: <Wallet color="#fff" size={20} />,
+    color: "#16a34a",
+  });
 
   const filteredExpenses = expenses.filter((item: any) => {
     const matchSearch = item.title
@@ -131,7 +153,7 @@ export default function HomeScreen() {
               <View style={styles.balanceCard}>
                 <Text style={styles.balanceLabel}>Tổng chi tiêu tháng này</Text>
                 <Text style={styles.balanceAmount}>
-                  {formatCurrency(totalBalance)}
+                  {formatCurrency(totalSpending)}
                 </Text>
               </View>
             </View>
@@ -220,7 +242,15 @@ export default function HomeScreen() {
           </>
         }
         renderItem={({ item }) => {
-          const config = getCategoryIcon(item.category);
+          const income = isIncomeTransaction(item);
+          const config = income
+            ? getIncomeIcon()
+            : getCategoryIcon(item.category);
+          const absAmount = Math.abs(Number(item.amount));
+          const amountLabel = income
+            ? `+ ${formatCurrency(absAmount)}`
+            : `- ${formatCurrency(absAmount)}`;
+          const amountColor = income ? "#16a34a" : "#ef4444";
           return (
             <TouchableOpacity
               onPress={() =>
@@ -236,7 +266,8 @@ export default function HomeScreen() {
                 color={config.color}
                 title={item.title}
                 date={new Date(item.date).toLocaleDateString("vi-VN")}
-                amount={`- ${formatCurrency(item.amount)}`}
+                amount={amountLabel}
+                amountColor={amountColor}
               />
             </TouchableOpacity>
           );
@@ -247,7 +278,14 @@ export default function HomeScreen() {
   );
 }
 
-const ExpenseItem = ({ icon, title, date, amount, color }: any) => (
+const ExpenseItem = ({
+  icon,
+  title,
+  date,
+  amount,
+  color,
+  amountColor = "#ef4444",
+}: any) => (
   <View style={styles.expenseItem}>
     <View style={[styles.iconContainer, { backgroundColor: color }]}>
       {icon}
@@ -256,7 +294,7 @@ const ExpenseItem = ({ icon, title, date, amount, color }: any) => (
       <Text style={styles.expenseTitle}>{title}</Text>
       <Text style={styles.expenseDate}>{date}</Text>
     </View>
-    <Text style={styles.expenseAmount}>{amount}</Text>
+    <Text style={[styles.expenseAmount, { color: amountColor }]}>{amount}</Text>
   </View>
 );
 

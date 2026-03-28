@@ -70,31 +70,33 @@ export default function ExpenseDetail() {
   };
 
   const handleDelete = () => {
-    Alert.alert("Xác nhận", "Bạn có muốn xóa khoản chi này không?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          setLoading(true);
-          try {
-            await apiClient.delete(`/Expense/${params.id}`);
-            router.back();
-          } catch (error) {
-            Alert.alert("Lỗi", "Không thể xóa giao dịch này");
-          } finally {
-            setLoading(false);
-          }
+    Alert.alert(
+      "Xác nhận xóa",
+      "Khoản tiền này sẽ được hoàn trả vào ví của bạn.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await apiClient.delete(`/Expense/${params.id}`);
+              router.replace("/(tabs)/home");
+            } catch (error) {
+              Alert.alert("Lỗi", "Không thể xóa giao dịch này");
+            } finally {
+              setLoading(false);
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
-      {/* Custom Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <ChevronLeft size={24} color="#1e293b" />
@@ -104,26 +106,22 @@ export default function ExpenseDetail() {
       </View>
 
       <View style={styles.card}>
-        {/* Dynamic Icon Section */}
         <View style={[styles.iconWrapper, { backgroundColor: config.bg }]}>
           {config.icon}
         </View>
-
         <Text style={styles.title}>{params.title}</Text>
 
-        {/* Date Badge */}
         <View style={styles.dateBadge}>
           <Calendar size={14} color="#64748b" style={{ marginRight: 6 }} />
           <Text style={styles.dateText}>
-            {new Date(params.date as string).toLocaleDateString("vi-VN", {
+            {new Intl.DateTimeFormat("vi-VN", {
               day: "2-digit",
               month: "long",
               year: "numeric",
-            })}
+            }).format(new Date(params.date as string))}
           </Text>
         </View>
 
-        {/* Amount Highlight */}
         <View style={styles.amountContainer}>
           <Text style={styles.amountLabel}>Số tiền đã chi</Text>
           <Text style={styles.amountValue}>
@@ -140,12 +138,11 @@ export default function ExpenseDetail() {
               </Text>
             </View>
           </View>
-
           <View style={styles.infoRow}>
             <Text style={styles.label}>Trạng thái</Text>
             <View style={[styles.pill, { backgroundColor: "#f0fdf4" }]}>
               <Text style={[styles.pillText, { color: "#16a34a" }]}>
-                Thành công
+                Đã khớp ví
               </Text>
             </View>
           </View>
@@ -155,7 +152,6 @@ export default function ExpenseDetail() {
       <View style={styles.btnGroup}>
         <TouchableOpacity
           style={styles.editBtn}
-          activeOpacity={0.8}
           onPress={() =>
             router.push({
               pathname: "/add-expense",
@@ -169,7 +165,6 @@ export default function ExpenseDetail() {
 
         <TouchableOpacity
           style={styles.deleteBtn}
-          activeOpacity={0.8}
           onPress={handleDelete}
           disabled={loading}
         >
@@ -204,9 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
   },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "#1e293b" },
   card: {
@@ -215,11 +207,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 5,
+    elevation: 4,
   },
   iconWrapper: {
     width: 80,
@@ -240,10 +228,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   dateText: { fontSize: 13, color: "#64748b", fontWeight: "600" },
-  amountContainer: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
+  amountContainer: { alignItems: "center", marginBottom: 32 },
   amountLabel: {
     fontSize: 13,
     color: "#94a3b8",
@@ -274,17 +259,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   editBtn: {
-    flex: 2, // Nút sửa to hơn vì là hành động chính
+    flex: 2,
     backgroundColor: "#3b82f6",
     flexDirection: "row",
     height: 60,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#3b82f6",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
   },
   editBtnText: {
     color: "#fff",

@@ -21,7 +21,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function ProfileScreen() {
-  // THAY ĐỔI Ở ĐÂY: Lấy hàm logout ra, không dùng setToken thủ công nữa
   const { token, logout } = useAuth();
   const router = useRouter();
   const [userInfo, setUserInfo] = useState({ name: "Thanh", email: "" });

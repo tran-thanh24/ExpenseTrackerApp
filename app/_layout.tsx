@@ -13,12 +13,10 @@ function RootLayoutNav() {
     const inAuthGroup = pathname?.startsWith("/auth");
 
     if (!isLoggedIn) {
-      // Nếu không còn đăng nhập, đưa về login ngay
       if (!inAuthGroup) {
         router.replace("/auth/login");
       }
     } else {
-      // Nếu đã đăng nhập mà đứng ở màn login/register thì đưa vào home
       if (inAuthGroup) {
         router.replace("/(tabs)/home");
       }

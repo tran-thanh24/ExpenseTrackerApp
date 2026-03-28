@@ -35,10 +35,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    // Xóa sạch ở cả 2 nơi lưu trữ
     await AsyncStorage.removeItem("userToken");
     await SecureStore.deleteItemAsync("userToken");
-    // Cập nhật state để kích hoạt Re-render ở Layout
     setToken(null);
     setIsLoggedIn(false);
   };
