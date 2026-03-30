@@ -1,6 +1,6 @@
 import apiClient from "./api";
 
-export const login = async (email: any, password: any) => {
+export const login = async (email: string, password: string) => {
   try {
     const response = await apiClient.post("/Auth/login", {
       email,
@@ -13,9 +13,11 @@ export const login = async (email: any, password: any) => {
 };
 
 export const register = async (userData: {
-  fullName: any;
-  email: any;
-  password: any;
+  fullName: string;
+  email: string;
+  username: string;
+  phoneNumber?: string;
+  password: string;
 }) => {
   try {
     const response = await apiClient.post("/Auth/register", userData);
@@ -23,9 +25,4 @@ export const register = async (userData: {
   } catch (error: any) {
     throw error;
   }
-};
-
-export const getProfileApi = async () => {
-  const response = await apiClient.get("/Auth/profile");
-  return response.data;
 };

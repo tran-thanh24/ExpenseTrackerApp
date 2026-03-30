@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react-native";
+import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -13,11 +13,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { register as registerApi } from "../services/authService"; // Đảm bảo đúng đường dẫn
+import { register as registerApi } from "../services/authService";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[0-9]{10,11}$/;
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,22 +30,52 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (!fullName || !email || !password) {
+    const normalizedFullName = fullName.trim().replace(/\s+/g, " ");
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = phoneNumber.trim();
+    const normalizedPassword = password.trim();
+    const normalizedConfirmPassword = confirmPassword.trim();
+
+    // 1. Validate cơ bản
+    if (!normalizedFullName || !normalizedEmail || !normalizedPassword) {
       Alert.alert("Thông báo", "Vui lòng điền đầy đủ thông tin");
       return;
     }
-    if (password !== confirmPassword) {
+
+    if (normalizedFullName.length < 2) {
+      Alert.alert("Lỗi", "Họ và tên phải có ít nhất 2 ký tự");
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      Alert.alert("Lỗi", "Email không đúng định dạng");
+      return;
+    }
+
+    if (normalizedPhone && !PHONE_REGEX.test(normalizedPhone)) {
+      Alert.alert("Lỗi", "Số điện thoại không đúng định dạng (10-11 chữ số)");
+      return;
+    }
+
+    if (normalizedPassword !== normalizedConfirmPassword) {
       Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp");
       return;
     }
-    if (password.length < 6) {
+
+    if (normalizedPassword.length < 6) {
       Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await registerApi({ fullName, email, password });
+      const response = await registerApi({
+        fullName: normalizedFullName,
+        email: normalizedEmail,
+        username: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        password: normalizedPassword,
+      });
 
       if (response) {
         Alert.alert(
@@ -96,6 +130,19 @@ export default function RegisterScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+          </View>
+
+          {/* Phone Input */}
+          <Text style={styles.label}>Số điện thoại (Không bắt buộc)</Text>
+          <View style={styles.inputWrapper}>
+            <Phone size={20} color="#636e72" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="09xxxxxxxx"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
             />
           </View>
 
@@ -166,7 +213,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     justifyContent: "center",
   },
-  backButton: { marginBottom: 20, width: 40 },
   header: { marginBottom: 32 },
   title: { fontSize: 26, fontWeight: "800", color: "#2d3436", marginBottom: 8 },
   subtitle: { fontSize: 15, color: "#636e72" },

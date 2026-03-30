@@ -16,6 +16,8 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { login as loginApi } from "../services/authService";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,14 +28,27 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedEmail || !normalizedPassword) {
       Alert.alert("Thông báo", "Vui lòng nhập đầy đủ Email và Mật khẩu");
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      Alert.alert("Thông báo", "Email không đúng định dạng");
+      return;
+    }
+
+    if (normalizedPassword.length < 6) {
+      Alert.alert("Thông báo", "Mật khẩu tối thiểu 6 ký tự");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await loginApi(email, password);
+      const response = await loginApi(normalizedEmail, normalizedPassword);
       console.log("Token chuẩn từ BE:", response.token);
 
       if (response.token) {

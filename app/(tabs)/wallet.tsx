@@ -7,6 +7,7 @@ import {
   Landmark,
   Plus,
   Ticket,
+  Trash2,
   Wallet as WalletIcon,
   X,
   Zap,
@@ -67,12 +68,11 @@ export default function FinalPremiumWalletScreen() {
   const [wallets, setWallets] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [userName, setUserName] = useState("Thành"); // Mặc định
+  const [userName, setUserName] = useState("Thành");
 
   const [newName, setNewName] = useState("");
   const [newBalance, setNewBalance] = useState("");
 
-  // --- 1. LẤY USERNAME TỪ BACKEND (TOKEN) ---
   const getUserInfo = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
@@ -85,7 +85,6 @@ export default function FinalPremiumWalletScreen() {
     }
   };
 
-  // --- 2. ĐỊNH DẠNG SỐ TIỀN ---
   const formatVisualNumber = (val: string) => {
     if (!val) return "";
     const number = val.replace(/[^0-9]/g, "");
@@ -112,15 +111,29 @@ export default function FinalPremiumWalletScreen() {
   );
 
   const handleCreateWallet = async () => {
-    if (!newName || !newBalance) {
+    const walletName = newName.trim();
+    const rawBalance = newBalance.replace(/\./g, "");
+    const parsedBalance = parseFloat(rawBalance);
+
+    if (!walletName || !rawBalance) {
       Alert.alert("Lỗi", "Vui lòng nhập đủ thông tin");
       return;
     }
+
+    if (walletName.length < 2) {
+      Alert.alert("Lỗi", "Tên ví phải có ít nhất 2 ký tự");
+      return;
+    }
+
+    if (!Number.isFinite(parsedBalance) || parsedBalance <= 0) {
+      Alert.alert("Lỗi", "Số dư ban đầu phải là số lớn hơn 0");
+      return;
+    }
+
     try {
-      const rawBalance = newBalance.replace(/\./g, "");
       await apiClient.post("/Wallet", {
-        name: newName,
-        balance: parseFloat(rawBalance),
+        name: walletName,
+        balance: parsedBalance,
       });
       setModalVisible(false);
       setNewName("");
@@ -130,6 +143,34 @@ export default function FinalPremiumWalletScreen() {
     } catch (error) {
       Alert.alert("Lỗi", "Không thể tạo ví");
     }
+  };
+
+  const handleDeleteWallet = async (wallet: any) => {
+    Alert.alert(
+      "Xóa ví",
+      `Bạn có chắc muốn xóa ví "${wallet.name}" không? Hành động này không thể hoàn tác.`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const res = await apiClient.delete(`/Wallet/${wallet.id}`);
+              fetchWallets();
+              Alert.alert("Thành công", res?.data?.message || "Đã xóa ví.");
+            } catch (error: any) {
+              const apiMessage =
+                error?.response?.data?.message ||
+                (typeof error?.response?.data === "string"
+                  ? error.response.data
+                  : null);
+              Alert.alert("Lỗi", apiMessage || "Không thể xóa ví.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const totalBalance = wallets.reduce(
@@ -142,7 +183,7 @@ export default function FinalPremiumWalletScreen() {
       <StatusBar barStyle="light-content" />
 
       <LinearGradient
-        colors={["#1e293b", "#334155"]}
+        colors={["#0f172a", "#1e293b", "#334155"]}
         style={styles.headerGradient}
       >
         <SafeAreaView edges={["top"]}>
@@ -154,12 +195,20 @@ export default function FinalPremiumWalletScreen() {
                 {new Intl.NumberFormat("vi-VN").format(totalBalance)} đ
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.plusCircle}
-              onPress={() => setModalVisible(true)}
-            >
-              <Plus color="#fff" size={28} />
-            </TouchableOpacity>
+          </View>
+          <View style={styles.overviewCard}>
+            <Text style={styles.overviewLabel}>Tổng số ví đang quản lý</Text>
+            <View style={styles.overviewBottomRow}>
+              <Text style={styles.overviewValue}>{wallets.length} ví</Text>
+              <TouchableOpacity
+                style={styles.overviewAddBtn}
+                onPress={() => setModalVisible(true)}
+                activeOpacity={0.85}
+              >
+                <Plus color="#e2e8f0" size={15} />
+                <Text style={styles.overviewAddText}>Thêm ví mới</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -212,7 +261,19 @@ export default function FinalPremiumWalletScreen() {
                     </View>
                     <Text style={styles.cardName}>{item.name}</Text>
                   </View>
-                  <ChevronRight color="#cbd5e1" size={20} />
+                  <View style={styles.cardActions}>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={(event: any) => {
+                        event.stopPropagation?.();
+                        handleDeleteWallet(item);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Trash2 color="#ef4444" size={16} />
+                    </TouchableOpacity>
+                    <ChevronRight color="#cbd5e1" size={20} />
+                  </View>
                 </View>
                 <View style={styles.cardBottom}>
                   <Text style={styles.cardBalanceLabel}>Số dư khả dụng</Text>
@@ -274,63 +335,86 @@ export default function FinalPremiumWalletScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, backgroundColor: "#f1f5f9" },
   headerGradient: {
-    paddingBottom: 50,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    paddingBottom: 76,
+    borderBottomLeftRadius: 44,
+    borderBottomRightRadius: 44,
   },
   headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 25,
-    paddingTop: 20,
+    paddingTop: 14,
   },
-  userGreeting: { color: "#94a3b8", fontSize: 13, fontWeight: "600" },
+  userGreeting: { color: "#cbd5e1", fontSize: 13, fontWeight: "600" },
   totalLabel: {
-    color: "#cbd5e1",
+    color: "#e2e8f0",
     fontSize: 15,
     fontWeight: "700",
     marginTop: 8,
   },
-  totalAmount: { color: "#fff", fontSize: 32, fontWeight: "900", marginTop: 4 },
-  plusCircle: {
-    width: 55,
-    height: 55,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
+  totalAmount: { color: "#fff", fontSize: 34, fontWeight: "900", marginTop: 6 },
+  overviewCard: {
+    marginHorizontal: 25,
+    marginTop: 22,
+    backgroundColor: "rgba(148, 163, 184, 0.2)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(226, 232, 240, 0.25)",
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  body: { flex: 1, marginTop: -35 },
+  overviewLabel: { color: "#cbd5e1", fontSize: 12, fontWeight: "600" },
+  overviewBottomRow: {
+    marginTop: 6,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  overviewValue: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  overviewAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(15,23,42,0.34)",
+    borderWidth: 1,
+    borderColor: "rgba(226,232,240,0.22)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+  },
+  overviewAddText: { color: "#e2e8f0", fontSize: 12, fontWeight: "700" },
+  body: { flex: 1, marginTop: -46 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 30,
-    marginBottom: 15,
+    paddingHorizontal: 24,
+    marginBottom: 14,
     gap: 10,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "800", color: "#1e293b" },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#0f172a" },
   badge: {
-    backgroundColor: "#3b82f6",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
   badgeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  listContainer: { paddingHorizontal: 20, paddingBottom: 100 },
+  listContainer: { paddingHorizontal: 18, paddingBottom: 120 },
   newWalletCard: {
     backgroundColor: "#fff",
-    borderRadius: 30,
-    padding: 22,
-    marginBottom: 16,
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
   },
   cardTop: {
     flexDirection: "row",
@@ -338,72 +422,100 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
   },
-  cardBrand: { flexDirection: "row", alignItems: "center", gap: 12 },
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fee2e2",
+  },
+  cardBrand: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   brandIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
   },
-  cardName: { fontSize: 17, fontWeight: "700", color: "#1e293b" },
-  cardBottom: { gap: 4 },
+  cardName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+    flexShrink: 1,
+  },
+  cardBottom: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+    gap: 5,
+  },
   cardBalanceLabel: {
     fontSize: 11,
     color: "#94a3b8",
     fontWeight: "700",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  cardBalanceValue: { fontSize: 22, fontWeight: "800" },
+  cardBalanceValue: { fontSize: 23, fontWeight: "900" },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    backgroundColor: "rgba(2, 6, 23, 0.66)",
     justifyContent: "flex-end",
   },
   modalContainer: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 25,
-    paddingBottom: 40,
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    paddingBottom: 34,
   },
   modalIndicator: {
-    width: 40,
+    width: 42,
     height: 5,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#dbeafe",
     borderRadius: 10,
     alignSelf: "center",
-    marginBottom: 20,
+    marginBottom: 18,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  modalTitle: { fontSize: 22, fontWeight: "800", color: "#1e293b" },
+  modalTitle: { fontSize: 21, fontWeight: "800", color: "#0f172a" },
   inputLabel: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#475569",
     fontWeight: "700",
-    marginTop: 20,
+    marginTop: 18,
     marginBottom: 8,
   },
   premiumInput: {
     backgroundColor: "#f8fafc",
-    padding: 18,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
     fontSize: 16,
-    color: "#1e293b",
+    color: "#0f172a",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: "#e2e8f0",
   },
   confirmBtn: {
-    backgroundColor: "#3b82f6",
-    padding: 20,
-    borderRadius: 20,
+    backgroundColor: "#2563eb",
+    padding: 17,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 28,
+    shadowColor: "#1d4ed8",
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
   },
   confirmBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 });

@@ -52,8 +52,13 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const ProfileItem = ({ icon, title, color = "#1e293b" }: any) => (
-    <TouchableOpacity style={styles.menuItem}>
+  const ProfileItem = ({
+    icon,
+    title,
+    color = "#1e293b",
+    onPress,
+  }: any) => (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={[styles.iconBox, { backgroundColor: color + "15" }]}>
         {icon}
       </View>
@@ -79,16 +84,19 @@ export default function ProfileScreen() {
             icon={<User color="#3b82f6" size={20} />}
             title="Thông tin cá nhân"
             color="#3b82f6"
+            onPress={() => router.push("/profile/personal-info")}
           />
           <ProfileItem
             icon={<ShieldCheck color="#10b981" size={20} />}
             title="Đổi mật khẩu"
             color="#10b981"
+            onPress={() => router.push("/profile/change-password")}
           />
           <ProfileItem
             icon={<Bell color="#f59e0b" size={20} />}
             title="Thông báo"
             color="#f59e0b"
+            onPress={() => router.push("/profile/notifications")}
           />
         </View>
 
@@ -97,6 +105,7 @@ export default function ProfileScreen() {
           <ProfileItem
             icon={<Settings color="#64748b" size={20} />}
             title="Cài đặt hệ thống"
+            onPress={() => router.push("/profile/settings")}
           />
 
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>

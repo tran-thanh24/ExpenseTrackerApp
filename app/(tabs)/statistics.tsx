@@ -11,6 +11,7 @@ import {
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -36,60 +37,49 @@ const getIcon = (categoryName: string) => {
 
 export default function StatisticsScreen() {
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("week");
+  const [selectedTab, setSelectedTab] = useState<
+    "day" | "week" | "month" | "year"
+  >("month");
 
-  // State phân biệt đang xem "Expense" hay "Income"
   const [statsType, setStatsType] = useState<"Expense" | "Income">("Expense");
 
-  // State đóng mở lịch và lưu ngày
   const [showPicker, setShowPicker] = useState(false);
-  const [customDate, setCustomDate] = useState<Date | null>(null);
+  const [showQuickActions, setShowQuickActions] = useState(false);
 
-  // MỚI: Biến lưu trữ ngày hiện tại đang xem cho các tab Day, Week, Month, Year
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
 
   const [stats, setStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
-    expenseChartData: [] as any[], // Lưu danh mục chi tiêu
-    incomeChartData: [] as any[], // Lưu danh mục thu nhập
+    expenseChartData: [] as any[],
+    incomeChartData: [] as any[],
   });
 
   useFocusEffect(
     useCallback(() => {
       fetchStats();
-    }, [selectedTab, customDate, currentViewDate]) // Lắng nghe thêm currentViewDate
+    }, [selectedTab, currentViewDate])
   );
 
   const fetchStats = async () => {
     try {
       setLoading(true);
-      let url = `/Expense/statistics/${selectedTab}`;
-
-      // Nếu là tab Custom và có ngày thì đính kèm ngày vào Query Param
-      if (selectedTab === "custom" && customDate) {
-        url += `?customDate=${customDate.toISOString()}`;
-      } else if (selectedTab !== "custom") {
-        // Gửi kèm ngày đang xem hiện tại lên API để Backend biết đường lùi ngày
-        url += `?customDate=${currentViewDate.toISOString()}`;
-      }
+      const url = `/Expense/statistics/${selectedTab}?customDate=${currentViewDate.toISOString()}`;
 
       const response = await apiClient.get(url);
       const data = response.data;
 
       const colors = ["#4ade80", "#a78bfa", "#fbbf24", "#f472b6", "#60a5fa"];
 
-      // ĐÃ SỬA: Thêm Math.abs() để xử lý số tiền âm cho biểu đồ CHI TIÊU
       const formattedExpenseChart = (data.categoryData || []).map(
         (item: any, index: number) => ({
-          value: Math.abs(item.amount), // Biến số âm thành số dương
+          value: Math.abs(item.amount),
           color: colors[index % colors.length],
           text: item.name,
           focused: index === 0,
         })
       );
 
-      // ĐÃ SỬA: Thêm Math.abs() cho biểu đồ THU NHẬP cho đồng bộ
       const formattedIncomeChart = (data.incomeCategoryData || []).map(
         (item: any, index: number) => ({
           value: Math.abs(item.amount),
@@ -112,7 +102,6 @@ export default function StatisticsScreen() {
     }
   };
 
-  // MỚI: Hàm xử lý khi bấm mũi tên lùi/tiến thời gian
   const handleNavigateDate = (direction: "prev" | "next") => {
     const newDate = new Date(currentViewDate);
     const step = direction === "prev" ? -1 : 1;
@@ -125,14 +114,8 @@ export default function StatisticsScreen() {
       newDate.setMonth(newDate.getMonth() + step);
     } else if (selectedTab === "year") {
       newDate.setFullYear(newDate.getFullYear() + step);
-    } else if (selectedTab === "custom" && customDate) {
-      const newCustom = new Date(customDate);
-      newCustom.setDate(newCustom.getDate() + step);
-      setCustomDate(newCustom);
-      return;
     }
 
-    // Không cho phép tiến tới tương lai quá ngày hôm nay
     if (newDate > new Date()) return;
     setCurrentViewDate(newDate);
   };
@@ -144,11 +127,12 @@ export default function StatisticsScreen() {
         : currentViewDate.toLocaleDateString("vi-VN");
     }
     if (selectedTab === "week") {
+      const end = new Date(currentViewDate);
       const start = new Date(currentViewDate);
-      start.setDate(start.getDate() - 7);
-      return `${start.toLocaleDateString(
+      start.setDate(start.getDate() - 6);
+      return `${start.toLocaleDateString("vi-VN")} - ${end.toLocaleDateString(
         "vi-VN"
-      )} - ${currentViewDate.toLocaleDateString("vi-VN")}`;
+      )}`;
     }
     if (selectedTab === "month") {
       return `${currentViewDate.toLocaleString("default", {
@@ -158,20 +142,22 @@ export default function StatisticsScreen() {
     if (selectedTab === "year") {
       return `Year ${currentViewDate.getFullYear()}`;
     }
-    if (selectedTab === "custom" && customDate) {
-      return customDate.toLocaleDateString("vi-VN");
-    }
     return "Date Range";
   };
 
   const currentChartData =
     statsType === "Expense" ? stats.expenseChartData : stats.incomeChartData;
 
-  // ĐÃ SỬA: Lấy giá trị tuyệt đối cho tổng số hiển thị ở giữa biểu đồ
   const currentTotal =
     statsType === "Expense"
       ? Math.abs(stats.totalExpense)
       : Math.abs(stats.totalIncome);
+
+  const applyQuickFilter = (tab: "day" | "week" | "month" | "year") => {
+    setSelectedTab(tab);
+    setCurrentViewDate(new Date());
+    setShowQuickActions(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -182,48 +168,14 @@ export default function StatisticsScreen() {
         {/* Header */}
         <View style={styles.headerRow}>
           <Text style={styles.title}>Statistics</Text>
-          <TouchableOpacity style={styles.filterIcon}>
+          <TouchableOpacity
+            style={styles.filterIcon}
+            onPress={() => setShowQuickActions(true)}
+          >
             <LayoutGrid size={20} color="#1e293b" />
           </TouchableOpacity>
         </View>
 
-        {/* Bộ lọc Thời gian */}
-        <View style={styles.filterContainer}>
-          {["day", "week", "month", "year"].map((tabKey) => {
-            const labelMap: { [key: string]: string } = {
-              day: "Daily",
-              week: "Weekly",
-              month: "Monthly",
-              year: "Yearly",
-            };
-            return (
-              <TouchableOpacity
-                key={tabKey}
-                style={[
-                  styles.filterBtn,
-                  selectedTab === tabKey && styles.activeFilter,
-                ]}
-                onPress={() => {
-                  setCustomDate(null);
-                  setCurrentViewDate(new Date()); // Reset về ngày hôm nay
-                  setSelectedTab(tabKey);
-                }}
-              >
-                <Text
-                  style={
-                    selectedTab === tabKey
-                      ? styles.activeFilterText
-                      : styles.filterText
-                  }
-                >
-                  {labelMap[tabKey]}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* THANH GẠT: Chọn xem Thu nhập hoặc Khoản chi */}
         <View style={styles.subTabContainer}>
           <TouchableOpacity
             style={[
@@ -261,7 +213,6 @@ export default function StatisticsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bộ chọn Ngày tháng (Có hỗ trợ bấm nút lùi tiến) */}
         <View style={styles.dateSelector}>
           <TouchableOpacity onPress={() => handleNavigateDate("prev")}>
             <ChevronLeft size={20} color="#94a3b8" />
@@ -282,15 +233,14 @@ export default function StatisticsScreen() {
 
         {showPicker && (
           <DateTimePicker
-            value={customDate || new Date()}
+            value={currentViewDate}
             mode="date"
             display="default"
             maximumDate={new Date()}
             onChange={(event, selectedDate) => {
               setShowPicker(false);
               if (selectedDate) {
-                setCustomDate(selectedDate);
-                setSelectedTab("custom");
+                setCurrentViewDate(selectedDate);
               }
             }}
           />
@@ -392,6 +342,96 @@ export default function StatisticsScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <Modal
+        visible={showQuickActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQuickActions(false)}
+      >
+        <View style={styles.sheetOverlay}>
+          <TouchableOpacity
+            style={styles.overlayTouchArea}
+            activeOpacity={1}
+            onPress={() => setShowQuickActions(false)}
+          />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Quick Statistics Actions</Text>
+
+            <Text style={styles.sheetSectionTitle}>Khoảng thời gian nhanh</Text>
+            <View style={styles.sheetRow}>
+              <TouchableOpacity
+                style={styles.sheetChip}
+                onPress={() => applyQuickFilter("day")}
+              >
+                <Text style={styles.sheetChipText}>Hôm nay</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sheetChip}
+                onPress={() => applyQuickFilter("week")}
+              >
+                <Text style={styles.sheetChipText}>7 ngày</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sheetChip}
+                onPress={() => applyQuickFilter("month")}
+              >
+                <Text style={styles.sheetChipText}>Tháng này</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sheetChip}
+                onPress={() => applyQuickFilter("year")}
+              >
+                <Text style={styles.sheetChipText}>Năm nay</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.sheetSectionTitle}>Loại thống kê</Text>
+            <View style={styles.sheetRow}>
+              <TouchableOpacity
+                style={[
+                  styles.sheetSegmentBtn,
+                  statsType === "Expense" && styles.sheetSegmentBtnExpense,
+                ]}
+                onPress={() => setStatsType("Expense")}
+              >
+                <Text
+                  style={[
+                    styles.sheetSegmentText,
+                    statsType === "Expense" && styles.sheetSegmentTextActive,
+                  ]}
+                >
+                  Khoản chi
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sheetSegmentBtn,
+                  statsType === "Income" && styles.sheetSegmentBtnIncome,
+                ]}
+                onPress={() => setStatsType("Income")}
+              >
+                <Text
+                  style={[
+                    styles.sheetSegmentText,
+                    statsType === "Income" && styles.sheetSegmentTextActive,
+                  ]}
+                >
+                  Thu nhập
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.sheetCloseBtn}
+              onPress={() => setShowQuickActions(false)}
+            >
+              <Text style={styles.sheetCloseText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -418,22 +458,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: { fontSize: 24, fontWeight: "700", color: "#1e293b" },
-  filterContainer: {
-    flexDirection: "row",
-    backgroundColor: "#e2e8f0",
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 15,
-  },
-  filterBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  activeFilter: { backgroundColor: "#3b82f6" },
-  activeFilterText: { color: "#fff", fontWeight: "600" },
-  filterText: { color: "#64748b", fontWeight: "500" },
   subTabContainer: {
     flexDirection: "row",
     backgroundColor: "#e2e8f0",
@@ -520,4 +544,73 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f1f5f9",
   },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(2, 6, 23, 0.45)",
+    justifyContent: "flex-end",
+  },
+  overlayTouchArea: { flex: 1 },
+  sheetContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#cbd5e1",
+    alignSelf: "center",
+    marginBottom: 14,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 14,
+  },
+  sheetSectionTitle: {
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 6,
+  },
+  sheetRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  sheetChip: {
+    backgroundColor: "#eff6ff",
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  sheetChipText: { color: "#1d4ed8", fontWeight: "600", fontSize: 13 },
+  sheetSegmentBtn: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  sheetSegmentBtnExpense: { backgroundColor: "#fee2e2" },
+  sheetSegmentBtnIncome: { backgroundColor: "#dcfce7" },
+  sheetSegmentText: { color: "#334155", fontWeight: "600" },
+  sheetSegmentTextActive: { color: "#0f172a" },
+  sheetCloseBtn: {
+    marginTop: 6,
+    backgroundColor: "#0f172a",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  sheetCloseText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

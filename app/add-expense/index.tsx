@@ -67,8 +67,16 @@ export default function AddExpenseScreen() {
       amount: parseFloat(amount),
       category: category,
       walletId: selectedWalletId,
+      kind: "Expense",
       date: isEdit ? params.date : new Date().toISOString(),
     };
+
+    const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
+    const spendingAmount = parseFloat(amount);
+    if (selectedWallet && spendingAmount > Number(selectedWallet.balance)) {
+      Alert.alert("Cảnh báo", "Bạn đã vượt quá chi tiêu");
+      return;
+    }
 
     setLoading(true);
     try {

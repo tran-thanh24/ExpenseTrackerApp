@@ -1,9 +1,16 @@
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationLightTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from "@react-navigation/native";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 
 function RootLayoutNav() {
   const { isLoggedIn, loading } = useAuth();
+  const { isDarkMode } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -24,18 +31,24 @@ function RootLayoutNav() {
   }, [isLoggedIn, pathname, loading]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="auth/login" />
-      <Stack.Screen name="auth/register" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <NavigationThemeProvider
+      value={isDarkMode ? NavigationDarkTheme : NavigationLightTheme}
+    >
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="auth/login" />
+        <Stack.Screen name="auth/register" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </NavigationThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

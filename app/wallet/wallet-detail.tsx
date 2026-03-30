@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft,
   CreditCard,
@@ -61,25 +62,49 @@ export default function WalletDetailScreen() {
   };
 
   const handleTransaction = async () => {
-    if (!amount || !title) {
+    const transactionTitle = title.trim();
+    const rawAmount = parseFloat(amount.replace(/\./g, ""));
+    const walletId = Number(id);
+
+    if (!amount || !transactionTitle) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ nội dung và số tiền");
       return;
     }
 
+    if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
+      Alert.alert("Lỗi", "Số tiền phải là số lớn hơn 0");
+      return;
+    }
+
+    if (transactionTitle.length < 2) {
+      Alert.alert("Lỗi", "Nội dung giao dịch phải có ít nhất 2 ký tự");
+      return;
+    }
+
+    if (!Number.isFinite(walletId) || walletId <= 0) {
+      Alert.alert("Lỗi", "Không xác định được ví giao dịch");
+      return;
+    }
+
     try {
-      const rawAmount = parseFloat(amount.replace(/\./g, ""));
-      // Gửi số âm nếu là chi tiêu, số dương nếu là nạp tiền
-      const finalAmount = isDeposit ? rawAmount : -rawAmount;
+      if (!isDeposit && rawAmount > currentBalance) {
+        Alert.alert("Cảnh báo", "Bạn đã vượt quá chi tiêu");
+        return;
+      }
+
+      const kind = isDeposit ? "Income" : "Expense";
+      const balanceDelta = isDeposit ? rawAmount : -rawAmount;
 
       await apiClient.post("/Expense", {
-        title: title,
-        amount: finalAmount,
-        walletId: Number(id),
+        title: transactionTitle,
+        amount: rawAmount,
+        walletId,
         category: isDeposit ? "Income" : "Outcome",
+        kind,
         date: new Date().toISOString(),
       });
 
-      setCurrentBalance((prev) => prev + finalAmount);
+      setCurrentBalance((prev) => prev + balanceDelta);
       setModalVisible(false);
       setAmount("");
       setTitle("");
@@ -98,52 +123,58 @@ export default function WalletDetailScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backBtn}
-          >
-            <ArrowLeft color="#1e293b" size={24} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chi tiết tài khoản</Text>
-          <View style={{ width: 45 }} />
-        </View>
-
-        {/* THẺ VÍ */}
-        <View style={styles.cardHighlight}>
-          <View style={styles.iconCircle}>
-            <CreditCard color="#fff" size={28} />
-          </View>
-          <Text style={styles.walletName}>{name}</Text>
-          <Text style={styles.balanceValue}>
-            {new Intl.NumberFormat("vi-VN").format(currentBalance)} đ
-          </Text>
-
-          <View style={styles.actionRow}>
+        <LinearGradient
+          colors={["#0f172a", "#1e293b", "#334155"]}
+          style={styles.topSection}
+        >
+          {/* HEADER */}
+          <View style={styles.header}>
             <TouchableOpacity
-              style={styles.depositBtn}
-              onPress={() => {
-                setIsDeposit(true);
-                setModalVisible(true);
-              }}
+              onPress={() => router.back()}
+              style={styles.backBtn}
+              activeOpacity={0.85}
             >
-              <TrendingUp color="#fff" size={18} />
-              <Text style={styles.actionText}>Nạp tiền</Text>
+              <ArrowLeft color="#f8fafc" size={22} />
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.withdrawBtn}
-              onPress={() => {
-                setIsDeposit(false);
-                setModalVisible(true);
-              }}
-            >
-              <TrendingDown color="#fff" size={18} />
-              <Text style={styles.actionText}>Chi tiêu</Text>
-            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Chi tiết tài khoản</Text>
+            <View style={styles.headerSpacer} />
           </View>
-        </View>
+
+          {/* THẺ VÍ */}
+          <View style={styles.cardHighlight}>
+            <View style={styles.iconCircle}>
+              <CreditCard color="#fff" size={26} />
+            </View>
+            <Text style={styles.walletName}>{name}</Text>
+            <Text style={styles.balanceValue}>
+              {new Intl.NumberFormat("vi-VN").format(currentBalance)} đ
+            </Text>
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.depositBtn}
+                onPress={() => {
+                  setIsDeposit(true);
+                  setModalVisible(true);
+                }}
+              >
+                <TrendingUp color="#fff" size={18} />
+                <Text style={styles.actionText}>Nạp tiền</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.withdrawBtn}
+                onPress={() => {
+                  setIsDeposit(false);
+                  setModalVisible(true);
+                }}
+              >
+                <TrendingDown color="#fff" size={18} />
+                <Text style={styles.actionText}>Chi tiêu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
 
         {/* DANH SÁCH LỊCH SỬ */}
         <View style={styles.historyBox}>
@@ -259,64 +290,93 @@ export default function WalletDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
+  topSection: {
+    borderBottomLeftRadius: 38,
+    borderBottomRightRadius: 38,
+    paddingBottom: 28,
+    marginBottom: 10,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   backBtn: {
-    width: 45,
-    height: 45,
-    backgroundColor: "#fff",
-    borderRadius: 15,
+    width: 42,
+    height: 42,
+    backgroundColor: "rgba(148,163,184,0.28)",
+    borderRadius: 13,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(226,232,240,0.3)",
   },
-  headerTitle: { fontSize: 18, fontWeight: "800", color: "#1e293b" },
-  cardHighlight: { alignItems: "center", paddingVertical: 30 },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: "#f8fafc" },
+  headerSpacer: { width: 42 },
+  cardHighlight: {
+    alignItems: "center",
+    marginHorizontal: 18,
+    marginTop: 8,
+    borderRadius: 26,
+    paddingVertical: 22,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(148,163,184,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(226,232,240,0.22)",
+  },
   iconCircle: {
-    width: 50,
-    height: 50,
-    backgroundColor: "#1e293b",
-    borderRadius: 15,
+    width: 48,
+    height: 48,
+    backgroundColor: "rgba(15,23,42,0.55)",
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
-  walletName: { fontSize: 16, color: "#64748b", fontWeight: "600" },
-  balanceValue: { fontSize: 32, fontWeight: "900", color: "#1e293b" },
+  walletName: { fontSize: 15, color: "#e2e8f0", fontWeight: "600" },
+  balanceValue: { fontSize: 31, fontWeight: "900", color: "#fff", marginTop: 3 },
   actionRow: { flexDirection: "row", gap: 12, marginTop: 20 },
   depositBtn: {
     flexDirection: "row",
     backgroundColor: "#16a34a",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 13,
     alignItems: "center",
     gap: 6,
-    elevation: 2,
+    shadowColor: "#166534",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   withdrawBtn: {
     flexDirection: "row",
     backgroundColor: "#dc2626",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 13,
     alignItems: "center",
     gap: 6,
-    elevation: 2,
+    shadowColor: "#991b1b",
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   actionText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   historyBox: {
     flex: 1,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 25,
-    elevation: 15,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -4 },
   },
   historyTitleRow: {
     flexDirection: "row",
@@ -325,7 +385,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   historyTitleText: { fontSize: 17, fontWeight: "700", color: "#1e293b" },
-  tranRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  tranRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    backgroundColor: "#f8fafc",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#eef2ff",
+  },
   tranIconBg: {
     width: 44,
     height: 44,
@@ -334,21 +403,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tranNote: { fontSize: 15, fontWeight: "700", color: "#1e293b" },
-  tranDate: { fontSize: 11, color: "#94a3b8" },
+  tranDate: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
   tranAmount: { fontSize: 15, fontWeight: "800" },
   emptyContainer: { alignItems: "center", marginTop: 40 },
   emptyText: { color: "#94a3b8" },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(2,6,23,0.62)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 25,
-    paddingBottom: 40,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 34,
   },
   modalHeader: {
     flexDirection: "row",
@@ -356,25 +426,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: "#1e293b" },
+  modalTitle: { fontSize: 21, fontWeight: "800", color: "#0f172a" },
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#64748b",
+    color: "#475569",
     marginBottom: 8,
     marginTop: 15,
   },
   input: {
-    backgroundColor: "#f1f5f9",
-    padding: 15,
-    borderRadius: 15,
+    backgroundColor: "#f8fafc",
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   confirmBtn: {
-    padding: 18,
-    borderRadius: 15,
+    padding: 16,
+    borderRadius: 14,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 26,
   },
   confirmBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 });
